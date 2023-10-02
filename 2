@@ -1,0 +1,208 @@
+import datetime
+import schedule
+import atexit
+import time
+
+from bing_virtual_electronic_being import SmartDevice, Bing, WebDriver
+
+
+def scrape_web(query: str) -> None:
+    """Searches the web for a given query using the Bing API and logs the results.
+
+    Args:
+        query: A string representing the search query.
+    """
+    try:
+        response = bing.search_web(query)
+        if response["web_search_results"]:
+            print(f"Search results retrieved successfully for {query}")
+        else:
+            print(f"No search results found for {query}")
+    except Exception as e:
+        print(f"Failed to retrieve search results for {query}: {e}")
+
+
+def create_content(prompt: str) -> None:
+    """Generates content based on a given prompt using the SmartDevice and Bing library and logs any errors that occur.
+
+    Args:
+        prompt: A string representing the content prompt.
+    """
+    try:
+        device.write(prompt)
+        bing.graphic_art(prompt)
+    except Exception as e:
+        print(f"Failed to create content for {prompt}: {e}")
+
+
+def browse_and_interact(url: str) -> None:
+    """Browses a given URL using the WebDriver class, performs a specified interaction, and logs any errors that occur.
+
+    Args:
+        url: A string representing the URL to browse.
+    """
+    try:
+        wd.browse(url)
+        wd.interact("click", "sign in")
+        wd.generate("a summary of this article")
+        print(f"Web interaction completed for {url}")
+    except Exception as e:
+        print(f"Failed to interact with {url}: {e}")
+
+
+def backup(data: dict, bucket_name: str) -> None:
+    """Saves a given data object to the file 'data.pkl' and uploads it to an S3 bucket with the given name.
+
+    Args:
+        data: A dictionary representing the data object to be backed up.
+        bucket_name: A string representing the name of the S3 bucket to upload the data to.
+    """
+    try:
+        file_path = "data.pkl"
+        with open(file_path, "wb") as f:
+            pickle.dump(data, f)
+
+        s3_client = boto3.client("s3")
+        s3_client.upload_file(file_path, bucket_name, file_path)
+        print(f"Data saved and uploaded successfully to {bucket_name}")
+    except Exception as e:
+        print(f"Failed to save or upload data: {e}")
+
+
+def main() -> None:
+    """Runs the program by calling various functions to perform web scraping, content creation, web browsing and interaction, and data backup."""
+    print("Starting the program")
+
+    # Get user input
+    choice = input('Enter choice: 1 for full_name, 2 for age, 3 for bmi, 4 for analysis\n')
+    choice = int(choice)
+
+    # Create a person object
+    s = Person("Alex", 1990, "Wonderland", 2345678, "aa@smail.com")
+
+    # Perform actions based on user choice
+    if choice == 1:
+        a = s.full_name("L.", "Alex")
+        print(a)
+    elif choice == 2:
+        b = s.age(1990)
+        print(b)
+    elif choice == 3:
+        c = s.bmi(80, 180)
+        print(c)
+    elif choice == 4:
+        c = s.bmi(80, 180)
+        d = s.analysis(c)
+        print(d)
+    else:
+        print("Invalid entry")
+
+    # Scrape the web
+    query = "python"
+    scrape_web(query)
+
+    # Create content based on a prompt
+    prompt = "a poem about love"
+    create_content(prompt)
+
+    # Browse a web page and interact with it
+    url = "https://www.bing.com"
+    browse_and_interact(url)
+
+    # Backup data to S3
+    data = {}  # Replace with your actual data
+    bucket_name = "my-bucket"
+    backup(data, bucket_name)
+
+    
+class Person:
+    """A class to represent a person with some attributes and methods."""
+
+    def __init__(self, name: str, birthday_year: int, address: str, telephone: int, email: str) -> None:
+        """Initializes a person object with the given attributes.
+
+        Args:
+            name: A string representing the name of the person.
+            birthday_year: An integer representing the year of birth of the person.
+            address: A string representing the address of the person.
+            telephone: An integer representing the telephone number of the person.
+            email: A string representing the email address of the person.
+        """
+        self.name = name
+        self.birthday_year = birthday_year
+        self.address = address
+        self.telephone = telephone
+        self.email = email
+
+    def full_name(self, surname: str, firstname: str) -> str:
+        """Returns the full name of the person by concatenating the surname and the firstname.
+
+        Args:
+            surname: A string representing the surname of the person.
+            firstname: A string representing the firstname of the person.
+
+        Returns:
+            A string representing the full name of the person.
+        """
+        self.surname = surname
+        self.firstname = firstname
+        return f"{self.firstname} {self.surname}"
+
+    def age(self, birthday_year: int) -> int:
+        """Returns the age of the person by subtracting the birthday year from the current year.
+
+        Args:
+            birthday_year: An integer representing the year of birth of the person.
+
+        Returns:
+            An integer representing the age of the person.
+        """
+        self.birthday_year = birthday_year
+        currentyear = datetime.datetime.now().year
+        age = currentyear - self.birthday_year
+        return age
+
+    def bmi(self, weight: float, height: float) -> float:
+        """Returns the body mass index (BMI) of the person by dividing the weight by the square of the height.
+
+        Args:
+            weight: A float representing the weight of the person in kilograms.
+            height: A float representing the height of the person in meters.
+
+        Returns:
+            A float representing the BMI of the person.
+        """
+        self.weight = weight
+        self.height = height
+        result = self.weight / (self.height**2)
+        return result
+
+    def analysis(self, result: float) -> None:
+        """Prints an analysis of the BMI result based on some thresholds.
+
+        Args:
+            result: A float representing the BMI result to be analyzed.
+        """
+        self.result = result
+        if result < 18.5:
+            print("You need to eat more.")
+        elif result > 25:
+            print("Try to care yourself.")
+        else:
+            print("You are a healthy person.")
+
+
+if __name__ == "__main__":
+    # Schedule the backup function to run periodically
+    schedule.every(1).minutes.do(backup, data={}, bucket_name="my-bucket")
+
+    # Register a function that closes the web driver on program exit
+    atexit.register(wd.close)
+
+    # Start the program
+    main()
+
+    # Keep running the scheduled tasks
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
